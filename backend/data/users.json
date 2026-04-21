@@ -1,0 +1,37 @@
+[
+  {
+    "_id": "32860680-106f-433a-89d8-9945eaa842eb",
+    "name": "Test User",
+    "email": "codex.auth.test@example.com",
+    "password": "secret123",
+    "userType": "user"
+  },
+  {
+    "_id": "558c552a-7590-489c-b8d1-a493af14ce78",
+    "name": "Flow Test",
+    "email": "flow.test@example.com",
+    "password": "test123",
+    "userType": "user"
+  },
+  {
+    "_id": "24e6ee56-76ff-4f05-b8ac-0b56c169fc7f",
+    "name": "Razeel",
+    "email": "razeel@gmail.com",
+    "password": "1234",
+    "userType": "user"
+  },
+  {
+    "_id": "admin-local-001",
+    "name": "Roamify Admin",
+    "email": "roamify@gmail.com",
+    "password": "roamify",
+    "userType": "admin"
+  },
+  {
+    "_id": "38f934e8-3f35-4d93-a6b4-14f440f2bfc5",
+    "name": "Adhil",
+    "email": "adhil@gmail.com",
+    "password": "1234",
+    "userType": "user"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "name": "project-2",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix backend run dev & npm --prefix roamify run dev",
+    "backend": "npm --prefix backend run dev",
+    "frontend": "npm --prefix roamify run dev"
+  }
+}
