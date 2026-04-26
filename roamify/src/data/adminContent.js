@@ -136,6 +136,7 @@ export const createFormDataFromDestination = (destination) => ({
 export const getHomepageDestinations = () => getAdminDestinations().slice(0, 4)
 
 export const ROOMS_STORAGE_KEY = 'roamify_admin_rooms';
+export const BOOKINGS_STORAGE_KEY = 'roamify_room_bookings';
 
 export const emptyRoomForm = {
   placeName: '',
@@ -185,6 +186,7 @@ export const defaultRooms = [
 ];
 
 export const getAdminRooms = createStorageReader(ROOMS_STORAGE_KEY, defaultRooms);
+export const getRoomBookings = createStorageReader(BOOKINGS_STORAGE_KEY, []);
 
 export const saveAdminRooms = (rooms) => {
   if (typeof window !== 'undefined') {
@@ -192,6 +194,15 @@ export const saveAdminRooms = (rooms) => {
     emitAdminContentChange(ROOMS_STORAGE_KEY)
   }
 };
+
+export const saveRoomBookings = (bookings) => {
+  if (!canUseStorage()) {
+    return
+  }
+
+  window.localStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(bookings))
+  emitAdminContentChange(BOOKINGS_STORAGE_KEY)
+}
 
 export const createRoomPayload = (formData, existingId) => ({
   id: existingId || `room-${Date.now()}`,

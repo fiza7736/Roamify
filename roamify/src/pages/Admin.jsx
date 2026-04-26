@@ -1,24 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  BOOKINGS_STORAGE_KEY,
   createDestinationPayload,
   createFormDataFromDestination,
   emptyDestinationForm,
   getAdminDestinations,
   saveAdminDestinations,
   getAdminRooms,
+  getRoomBookings,
   saveAdminRooms,
+  saveRoomBookings,
   emptyRoomForm,
   createRoomPayload,
   createFormDataFromRoom
 } from '../data/adminContent'
-
-const dashboardCards = [
-  { label: 'Active Bookings', value: '128', detail: '+14 this week' },
-  { label: 'Listed Rooms', value: '42', detail: '8 premium suites' },
-  { label: 'Destinations', value: '19', detail: '3 added this month' },
-  { label: 'Support Tickets', value: '07', detail: '2 urgent reviews' }
-]
+import useAdminCollection from '../hooks/useAdminCollection'
 
 const recentActivities = [
   { title: 'Luxury room approval', description: 'Maldives Pearl Villa was reviewed and published.', time: '10 min ago' },
@@ -38,7 +35,7 @@ function Admin() {
   const [currentUser, setCurrentUser] = useState(null)
   
   // Toggles the editor
-  const [activeTab, setActiveTab] = useState('destinations') // 'destinations' or 'rooms'
+  const [activeTab, setActiveTab] = useState('destinations')
 
   // DESTINATION STATES
   const [destinations, setDestinations] = useState([])
@@ -53,6 +50,7 @@ function Admin() {
   const [roomEditingId, setRoomEditingId] = useState(null)
   const [roomCoverName, setRoomCoverName] = useState('')
   const [roomGalleryNames, setRoomGalleryNames] = useState([])
+  const [bookings] = useAdminCollection(getRoomBookings, BOOKINGS_STORAGE_KEY)
 
   useEffect(() => {
     const storedUser = sessionStorage.getItem('existingUser')
@@ -72,6 +70,15 @@ function Admin() {
   }, [navigate])
 
   const welcomeName = useMemo(() => currentUser?.name || 'Admin', [currentUser])
+  const dashboardCards = useMemo(
+    () => [
+      { label: 'Active Bookings', value: String(bookings.length).padStart(2, '0'), detail: bookings.length ? 'New guest requests received' : 'No room bookings yet' },
+      { label: 'Listed Rooms', value: String(rooms.length).padStart(2, '0'), detail: 'Rooms currently available' },
+      { label: 'Destinations', value: String(destinations.length).padStart(2, '0'), detail: 'Travel spots in collection' },
+      { label: 'Support Tickets', value: '07', detail: '2 urgent reviews' }
+    ],
+    [bookings.length, destinations.length, rooms.length]
+  )
 
   if (!currentUser) return null
 
@@ -187,6 +194,21 @@ function Admin() {
     saveAdminRooms(nextList)
   }
 
+  const handleDeleteBooking = (id) => {
+    const nextBookings = bookings.filter((booking) => booking.id !== id)
+    saveRoomBookings(nextBookings)
+  }
+
+  const formatBookingDate = (value) => {
+    if (!value) return 'Not provided'
+
+    return new Date(value).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
+  }
+
   return (
     <div className="admin-page">
       <section className="admin-hero">
@@ -228,6 +250,12 @@ function Admin() {
          >
            Manage Rooms
          </button>
+         <button
+           onClick={() => setActiveTab('bookings')}
+           style={{ backgroundColor: activeTab === 'bookings' ? "yellowgreen" : "#fff", color: activeTab === 'bookings' ? "black" : "#666", padding: "10px 20px", borderRadius: "8px", border: activeTab === 'bookings' ? "2px solid black" : "1px solid #ccc", fontWeight: "bold" }}
+         >
+           View Bookings
+         </button>
       </div>
 
       {/* Toggled Content */}
@@ -247,6 +275,7 @@ function Admin() {
               </select>
               <input name="placeName" value={destFormData.placeName} onChange={handleDestChange} placeholder="Place name" />
               <input name="location" value={destFormData.location} onChange={handleDestChange} placeholder="Location" />
+              <input name="locationDetail" value={destFormData.locationDetail} onChange={handleDestChange} placeholder="Location detail for modal" />
               <input name="coverImage" value={destFormData.coverImage} onChange={handleDestChange} placeholder="Cover image URL" />
               <div className="admin-file-field">
                 <label className="admin-file-label">Or upload cover</label>
@@ -259,6 +288,10 @@ function Admin() {
                 {!!destGalleryNames.length && <small>{destGalleryNames.join(', ')}</small>}
               </div>
               <input name="shortTagline" value={destFormData.shortTagline} onChange={handleDestChange} placeholder="Short tagline" />
+              <input name="bestTimeToVisit" value={destFormData.bestTimeToVisit} onChange={handleDestChange} placeholder="Best time to visit" />
+              <input name="entryFee" value={destFormData.entryFee} onChange={handleDestChange} placeholder="Entry fee" />
+              <textarea name="whyVisit" value={destFormData.whyVisit} onChange={handleDestChange} placeholder="Why visit? One point per line" rows="3" />
+              <textarea name="thingsToDo" value={destFormData.thingsToDo} onChange={handleDestChange} placeholder="Things to do. One item per line" rows="3" />
               <textarea className="admin-form-wide" name="about" value={destFormData.about} onChange={handleDestChange} placeholder="Detailed description" rows="3" />
               <div className="admin-form-actions">
                 <button className="admin-save-btn" type="submit">Save Destination</button>
@@ -349,6 +382,49 @@ function Admin() {
                 </article>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {activeTab === 'bookings' && (
+        <section className="admin-content-manager">
+          <div className="admin-panel">
+            <div className="admin-panel-head">
+              <h3>Room Booking Messages</h3>
+              <span>{bookings.length} reservation{bookings.length === 1 ? '' : 's'} received</span>
+            </div>
+
+            {bookings.length ? (
+              <div className="admin-saved-list">
+                {bookings.map((booking) => (
+                  <article key={booking.id} className="admin-saved-card" style={{ alignItems: 'flex-start' }}>
+                    <div style={{ width: '100%' }}>
+                      <p style={{ marginBottom: '6px' }}>{booking.roomName} | {booking.location}</p>
+                      <strong>{booking.fullName}</strong>
+                      <div className="mt-2 text-secondary" style={{ lineHeight: 1.8 }}>
+                        <div><strong>Email:</strong> {booking.email}</div>
+                        <div><strong>Phone:</strong> {booking.phone}</div>
+                        <div><strong>Guests:</strong> {booking.guests}</div>
+                        <div><strong>Stay:</strong> {formatBookingDate(booking.checkIn)} to {formatBookingDate(booking.checkOut)}</div>
+                        <div><strong>Nights:</strong> {booking.totalNights}</div>
+                        <div><strong>Total Price:</strong> ${booking.totalPrice}</div>
+                        <div><strong>Booked On:</strong> {formatBookingDate(booking.bookedAt)}</div>
+                        <div><strong>Message:</strong> {booking.specialRequest || 'No special request from the user.'}</div>
+                      </div>
+                      <div className="admin-saved-actions mt-3">
+                        <button type="button" className="admin-inline-btn admin-inline-btn-danger" onClick={() => handleDeleteBooking(booking.id)}>
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="text-secondary" style={{ padding: '12px 0' }}>
+                No user booking messages yet. Once a traveler reserves a room, the details will appear here.
+              </div>
+            )}
           </div>
         </section>
       )}

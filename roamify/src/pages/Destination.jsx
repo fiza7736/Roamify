@@ -83,7 +83,9 @@ function Destination() {
 
             <div className='col-lg-6'>
               {(selectedDestination.galleryImages.length ? selectedDestination.galleryImages : [selectedDestination.coverImage]).map((image) => (
-                <img key={image} src={image} alt={selectedDestination.placeName} className='w-75 my-2 shadow' />
+                <div key={image} className='destination-modal-image-wrap'>
+                  <img src={image} alt={selectedDestination.placeName} className='destination-modal-image shadow' />
+                </div>
               ))}
             </div>
 

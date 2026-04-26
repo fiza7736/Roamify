@@ -26,7 +26,7 @@ function Favourites() {
     <div className='container min-vh-100 py-5 mt-5'>
       <div className='d-flex align-items-center mb-5 border-bottom pb-4'>
         <h1 style={{ fontFamily: "Luckiest Guy", color: "black", fontSize: "clamp(30px, 5vw, 50px)", margin: 0 }}>
-          My <span className="text-danger">Wishlist</span>
+          My <span style={{color:'yellowgreen'}}>Wishlist</span>
         </h1>
         <div className="ms-3 fs-3 text-danger">
           <i className="fa-solid fa-heart"></i>

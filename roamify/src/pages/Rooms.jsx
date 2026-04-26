@@ -59,7 +59,7 @@ function Rooms() {
                   </Button>
                 </Link>
           
-                <Link to={`/rooms/${room.id}`}>
+                <Link to={`/rooms/${room.id}?reserve=true`}>
                   <Button 
                     style={{ backgroundColor: "black", color: "yellowgreen", border: "none" }} 
                     className='fw-bold shadow-sm px-4 rounded'

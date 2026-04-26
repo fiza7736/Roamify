@@ -6,21 +6,42 @@ import HomeCard from '../components/HomeCard'
 import DesignCard from '../components/DesignCard'
 
 function Home() {
+  const highlightStats = [
+    { value: '4.9/5', label: 'Guest Rating', detail: '★★★★★ from recent guests' },
+    { value: '12K+', label: 'Happy Travelers', detail: 'Shared memories worldwide' },
+    { value: '80+', label: 'Destinations', detail: 'Paris, Bali, Dubai, Goa and more' },
+    { value: '350+', label: 'Stays Booked', detail: 'Beach rooms, suites and cozy cabins' }
+  ]
+
   return (
     <div className="overflow-hidden">
       {/* landing */}
-      <div className='home-hero'>
-        <div className='home-hero-copy'>
-          <h1 style={{ fontFamily: 'Audiowide', fontSize: 'clamp(40px, 8vw, 80px)', color: "black" }} className='text-center'>Roamify</h1>
-          <h4 style={{ fontFamily: "Macondo", color: "black" }} className='text-center'>“Discover destinations. Book your stay. <br /> Roamify your world.”</h4>
-          <Link to={'./service'} className="d-inline-block mt-4"> 
-            <button style={{ backgroundColor: "black" }} className='btn btn-dark fw-bold rounded shadow py-2 px-4'>
-              <span style={{ color: "yellowgreen" }}>Starts To Explore</span>
-            </button>
-          </Link>
-        </div>
-        <div className="home-hero-visual">
-          <HomeCard />
+      <div className='home-hero-shell'>
+        <div className='home-hero'>
+          <div className='home-hero-copy'>
+            <h1 style={{ fontFamily: 'Audiowide', fontSize: 'clamp(40px, 8vw, 80px)', color: "black" }} className='text-center'>Roamify</h1>
+            <h4 style={{ fontFamily: "Macondo", color: "black" }} className='text-center'>“Discover destinations. Book your stay. <br /> Roamify your world.”</h4>
+            <Link to={'./service'} className="d-inline-block mt-4"> 
+              <button style={{ backgroundColor: "black" }} className='btn btn-dark fw-bold rounded shadow py-2 px-4'>
+                <span style={{ color: "yellowgreen" }}>Starts To Explore</span>
+              </button>
+            </Link>
+          </div>
+          <div className="home-hero-visual-wrap">
+            <div className="home-hero-visual">
+              <HomeCard />
+            </div>
+          </div>
+
+          <div className='home-hero-stats'>
+            {highlightStats.map((stat) => (
+              <div key={stat.label} className='home-hero-stat'>
+                <strong>{stat.value}</strong>
+                <span>{stat.label}</span>
+                <small>{stat.detail}</small>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

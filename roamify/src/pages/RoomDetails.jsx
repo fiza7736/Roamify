@@ -1,14 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getAdminRooms, ROOMS_STORAGE_KEY } from '../data/adminContent';
-import { Container, Row, Col, Image, Badge, Button } from 'react-bootstrap';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { BOOKINGS_STORAGE_KEY, getAdminRooms, getRoomBookings, ROOMS_STORAGE_KEY, saveRoomBookings } from '../data/adminContent';
+import { Container, Row, Col, Image, Badge, Button, Form, Alert } from 'react-bootstrap';
 import useAdminCollection from '../hooks/useAdminCollection';
+
+const createInitialReservation = () => ({
+  fullName: '',
+  email: '',
+  phone: '',
+  guests: 1,
+  checkIn: '',
+  checkOut: '',
+  specialRequest: ''
+});
 
 function RoomDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [room, setRoom] = useState(null);
   const [rooms] = useAdminCollection(getAdminRooms, ROOMS_STORAGE_KEY);
+  const [showReservationForm, setShowReservationForm] = useState(false);
+  const [reservation, setReservation] = useState(createInitialReservation);
+  const [reservationError, setReservationError] = useState('');
+  const [reservationSuccess, setReservationSuccess] = useState('');
+  const reservationFormRef = useRef(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -18,6 +34,90 @@ function RoomDetails() {
     const found = rooms.find(r => r.id === id);
     setRoom(found);
   }, [rooms, id]);
+
+  useEffect(() => {
+    if (searchParams.get('reserve') === 'true') {
+      setShowReservationForm(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (showReservationForm) {
+      requestAnimationFrame(() => {
+        reservationFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }, [showReservationForm]);
+
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  const totalNights = useMemo(() => {
+    if (!reservation.checkIn || !reservation.checkOut) {
+      return 0;
+    }
+
+    const checkInDate = new Date(reservation.checkIn);
+    const checkOutDate = new Date(reservation.checkOut);
+    const diffInMs = checkOutDate - checkInDate;
+    const nights = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
+
+    return nights > 0 ? nights : 0;
+  }, [reservation.checkIn, reservation.checkOut]);
+
+  const totalPrice = useMemo(() => {
+    const nightlyPrice = Number(room?.price || 0);
+    return totalNights * nightlyPrice;
+  }, [room?.price, totalNights]);
+
+  const handleReservationChange = (event) => {
+    const { name, value } = event.target;
+
+    setReservation((prev) => ({
+      ...prev,
+      [name]: name === 'guests' ? Number(value) : value
+    }));
+    setReservationError('');
+  };
+
+  const handleOpenReservation = () => {
+    setShowReservationForm(true);
+    setSearchParams({ reserve: 'true' });
+    setReservationSuccess('');
+  };
+
+  const handleReservationSubmit = (event) => {
+    event.preventDefault();
+
+    if (!reservation.fullName || !reservation.email || !reservation.phone || !reservation.checkIn || !reservation.checkOut) {
+      setReservationError('Please fill in all reservation details before confirming.');
+      return;
+    }
+
+    if (totalNights <= 0) {
+      setReservationError('Check-out date must be after the check-in date.');
+      return;
+    }
+
+    const nextBooking = {
+      id: `booking-${Date.now()}`,
+      roomId: room.id,
+      roomName: room.placeName,
+      location: room.location,
+      pricePerNight: Number(room.price),
+      ...reservation,
+      totalNights,
+      totalPrice,
+      bookedAt: new Date().toISOString()
+    };
+
+    const existingBookings = getRoomBookings();
+    saveRoomBookings([nextBooking, ...existingBookings]);
+
+    setReservationSuccess(`Thank you for booking ${room.placeName} with Roamify! Your reservation is confirmed, and we can't wait to host you.`);
+    setReservationError('');
+    setReservation(createInitialReservation());
+    setSearchParams({});
+  };
 
   if (!room) {
     return (
@@ -120,7 +220,12 @@ function RoomDetails() {
               </div>
 
               <div className="pt-2 mt-4">
-                <Button variant="dark" className="w-100 rounded-pill py-3 fw-bold shadow mb-3" style={{ backgroundColor: 'black', color: 'yellowgreen' }}>
+                <Button
+                  variant="dark"
+                  className="w-100 rounded-pill py-3 fw-bold shadow mb-3"
+                  style={{ backgroundColor: 'black', color: 'yellowgreen' }}
+                  onClick={handleOpenReservation}
+                >
                   Reserve Now
                 </Button>
                 <Button variant="outline-dark" className="w-100 rounded-pill py-3 fw-bold shadow-sm" onClick={() => navigate(-1)}>
@@ -130,6 +235,160 @@ function RoomDetails() {
             </div>
           </Col>
         </Row>
+
+        {showReservationForm && (
+          <Row className="mt-4">
+            <Col lg={8}>
+              <div ref={reservationFormRef} className="bg-white p-4 p-md-5 rounded shadow-sm">
+                <h3 style={{ fontFamily: "Alan Sans", fontWeight: 'bold' }} className="mb-4">Reserve {room.placeName}</h3>
+
+                {reservationSuccess && (
+                  <Alert
+                    variant="success"
+                    className="rounded-4 border-0 shadow-sm"
+                    style={{ backgroundColor: 'yellowgreen', color: 'black' }}
+                  >
+                    <Alert.Heading className="fw-bold mb-2" style={{ fontFamily: 'Alan Sans' }}>
+                      Booking Confirmed
+                    </Alert.Heading>
+                    <p className="mb-1">{reservationSuccess}</p>
+                    <p className="mb-0" style={{ color: 'black' }}>
+                      We hope your stay is comfortable, relaxing, and full of great memories.
+                    </p>
+                  </Alert>
+                )}
+
+                {reservationError && (
+                  <Alert variant="danger" className="rounded-4">{reservationError}</Alert>
+                )}
+
+                <Form onSubmit={handleReservationSubmit}>
+                  <Row className="g-3">
+                    <Col md={6}>
+                      <Form.Group>
+                        <Form.Label className="fw-bold">Full Name</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="fullName"
+                          value={reservation.fullName}
+                          onChange={handleReservationChange}
+                          placeholder="Enter your full name"
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group>
+                        <Form.Label className="fw-bold">Email</Form.Label>
+                        <Form.Control
+                          type="email"
+                          name="email"
+                          value={reservation.email}
+                          onChange={handleReservationChange}
+                          placeholder="Enter your email"
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group>
+                        <Form.Label className="fw-bold">Phone Number</Form.Label>
+                        <Form.Control
+                          type="tel"
+                          name="phone"
+                          value={reservation.phone}
+                          onChange={handleReservationChange}
+                          placeholder="Enter your phone number"
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group>
+                        <Form.Label className="fw-bold">Guests</Form.Label>
+                        <Form.Select name="guests" value={reservation.guests} onChange={handleReservationChange}>
+                          {[1, 2, 3, 4, 5, 6].map((guestCount) => (
+                            <option key={guestCount} value={guestCount}>{guestCount} Guest{guestCount > 1 ? 's' : ''}</option>
+                          ))}
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group>
+                        <Form.Label className="fw-bold">Check In</Form.Label>
+                        <Form.Control
+                          type="date"
+                          name="checkIn"
+                          min={today}
+                          value={reservation.checkIn}
+                          onChange={handleReservationChange}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group>
+                        <Form.Label className="fw-bold">Check Out</Form.Label>
+                        <Form.Control
+                          type="date"
+                          name="checkOut"
+                          min={reservation.checkIn || today}
+                          value={reservation.checkOut}
+                          onChange={handleReservationChange}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col xs={12}>
+                      <Form.Group>
+                        <Form.Label className="fw-bold">Special Request</Form.Label>
+                        <Form.Control
+                          as="textarea"
+                          rows={4}
+                          name="specialRequest"
+                          value={reservation.specialRequest}
+                          onChange={handleReservationChange}
+                          placeholder="Any preferences or extra requests?"
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+
+                  <div className="mt-4 p-4 rounded" style={{ backgroundColor: '#f7f9ef', border: '1px solid rgba(154, 205, 50, 0.35)' }}>
+                    <div className="d-flex flex-wrap justify-content-between gap-3">
+                      <div>
+                        <div className="text-muted">Stay Summary</div>
+                        <strong>{totalNights || 0} night{totalNights === 1 ? '' : 's'}</strong>
+                      </div>
+                      <div>
+                        <div className="text-muted">Rate</div>
+                        <strong>${room.price} / night</strong>
+                      </div>
+                      <div>
+                        <div className="text-muted">Total</div>
+                        <strong>${totalPrice || 0}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="d-flex flex-wrap gap-3 mt-4">
+                    <Button type="submit" variant="dark" className="px-4 py-2 fw-bold rounded-pill" style={{ backgroundColor: 'black', color: 'yellowgreen' }}>
+                      Confirm Reservation
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline-dark"
+                      className="px-4 py-2 fw-bold rounded-pill"
+                      onClick={() => {
+                        setShowReservationForm(false);
+                        setReservationError('');
+                        setReservationSuccess('');
+                        setSearchParams({});
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </Form>
+              </div>
+            </Col>
+          </Row>
+        )}
       </Container>
     </div>
   );

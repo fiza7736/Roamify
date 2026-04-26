@@ -9,6 +9,7 @@ function HomeCard() {
           alt="Traveler enjoying a scenic view"
           className='home-card-image shadow'
         />
+        <span className='home-card-label'>Lake</span>
       </div>
       <div className='home-card-item home-card-item-secondary'>
         <img
@@ -16,6 +17,7 @@ function HomeCard() {
           alt="Tropical beach destination"
           className='home-card-image shadow'
         />
+        <span className='home-card-label'>Mountain</span>
       </div>
       <div className='home-card-item home-card-item-tertiary'>
         <img
@@ -23,6 +25,7 @@ function HomeCard() {
           alt="Mountain destination landscape"
           className='home-card-image shadow'
         />
+        <span className='home-card-label'>Beach</span>
       </div>
     </div>
   )

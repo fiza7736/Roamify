@@ -26,7 +26,7 @@ function RoomCard() {
             
             <div className='d-flex justify-content-between align-items-center mt-auto pt-3 border-top room-card-footer'>
               <span className='room-card-price'>${room.price}<small> / night</small></span>
-              <Link to={`/rooms/${room.id}`} style={{textDecoration:"none"}}>
+              <Link to={`/rooms/${room.id}?reserve=true`} style={{textDecoration:"none"}}>
                 <Button style={{backgroundColor:"black", border: 'none', color: "yellowgreen"}} className='fw-bold shadow-sm px-4 rounded room-card-preview-btn'>Reserve Room</Button>
               </Link>
             </div>
